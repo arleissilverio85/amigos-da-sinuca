@@ -3,42 +3,65 @@
 import React, { useState, useEffect } from 'react';
 import PoolBackground from '@/components/PoolBackground';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Swords, Search, User, Users, UserPlus } from 'lucide-react';
+import { ArrowLeft, Swords, Search, User, Users, UserPlus, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MatchPlayerCard from '@/components/MatchPlayerCard';
-import { generateMockPlayers, Player } from '@/utils/mockPlayers';
+import { Player } from '@/utils/mockPlayers';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/components/SessionContextProvider';
+import { toast } from 'sonner';
 
 type SlotType = 'partner' | 'opponent1' | 'opponent2';
 
 const NewMatch = () => {
   const navigate = useNavigate();
+  const { session } = useSession();
   const [matchMode, setMatchMode] = useState<'solo' | 'doubles'>('solo');
   const [currentUser, setCurrentUser] = useState<any>(null);
   
-  // Slots de jogadores
   const [partner, setPartner] = useState<Player | null>(null);
   const [opponent1, setOpponent1] = useState<Player | null>(null);
   const [opponent2, setOpponent2] = useState<Player | null>(null);
   
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [dbPlayers, setDbPlayers] = useState<Player[]>([]);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<SlotType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('player_profile');
-    const profile = saved ? JSON.parse(saved) : { name: 'Você', wins: 0, losses: 0, points: 0, photo: null };
-    setCurrentUser(profile);
-    
-    const allPlayers = generateMockPlayers(profile).filter(p => !p.isCurrentUser);
-    setPlayers(allPlayers);
-  }, []);
+    const loadData = async () => {
+      if (!session?.user) return;
+
+      // Buscar perfil do usuário logado
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      
+      setCurrentUser({ ...profile, isCurrentUser: true });
+
+      // Buscar todos os outros jogadores cadastrados
+      const { data: allPlayers } = await supabase
+        .from('profiles')
+        .select('*')
+        .neq('id', session.user.id);
+
+      if (allPlayers) {
+        setDbPlayers(allPlayers);
+      }
+      setLoading(false);
+    };
+
+    loadData();
+  }, [session]);
 
   const openSelector = (slot: SlotType) => {
     setActiveSlot(slot);
@@ -53,15 +76,49 @@ const NewMatch = () => {
     setActiveSlot(null);
   };
 
-  // Filtrar jogadores que já foram selecionados em outros slots
   const selectedIds = [partner?.id, opponent1?.id, opponent2?.id].filter(Boolean);
-  const filteredPlayers = players
+  const filteredPlayers = dbPlayers
     .filter(p => !selectedIds.includes(p.id))
-    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    .filter(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const canStart = matchMode === 'solo' 
     ? !!opponent1 
     : (!!partner && !!opponent1 && !!opponent2);
+
+  const handleCreateMatch = async () => {
+    if (!canStart || !session?.user) return;
+
+    toast.loading("Iniciando partida...");
+    
+    const { error } = await supabase
+      .from('matches')
+      .insert({
+        creator_id: session.user.id,
+        mode: matchMode,
+        player1_a: session.user.id,
+        player2_a: partner?.id || null,
+        player1_b: opponent1?.id || null,
+        player2_b: opponent2?.id || null,
+        status: 'pending'
+      });
+
+    toast.dismiss();
+
+    if (error) {
+      toast.error("Erro ao criar partida: " + error.message);
+    } else {
+      toast.success("Partida iniciada com sucesso!");
+      navigate('/dashboard');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <Loader2 className="animate-spin text-emerald-500" size={48} />
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen p-4 md:p-8 text-white overflow-x-hidden pb-24">
@@ -96,15 +153,11 @@ const NewMatch = () => {
       </header>
 
       <main className="z-10 relative max-w-7xl mx-auto flex flex-col items-center">
-        <div className={cn(
-          "grid grid-cols-1 gap-8 items-stretch w-full",
-          matchMode === 'solo' ? "lg:grid-cols-[1fr_auto_1fr]" : "lg:grid-cols-[1fr_auto_1fr]"
-        )}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 items-stretch w-full">
           
-          {/* Lado A: Sua Equipe */}
-          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-left-8 duration-700">
+          <div className="flex flex-col gap-4">
             <h3 className="text-center text-xs font-black uppercase tracking-[0.2em] text-emerald-500/60 mb-2">Sua Equipe</h3>
-            <div className={cn("grid gap-4 h-full", matchMode === 'doubles' ? "grid-cols-1" : "grid-cols-1")}>
+            <div className="grid gap-4 h-full">
               <MatchPlayerCard player={currentUser} label="Você" />
               {matchMode === 'doubles' && (
                 <MatchPlayerCard 
@@ -117,18 +170,15 @@ const NewMatch = () => {
             </div>
           </div>
 
-          {/* VS Icon */}
           <div className="flex flex-col items-center justify-center gap-4 py-8 lg:py-0 self-center">
-            <div className="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-900/40 border-4 border-slate-950 z-20 animate-pulse">
+            <div className="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-900/40 border-4 border-slate-950 z-20">
               <Swords size={40} className="text-white" />
             </div>
-            <div className="hidden lg:block h-full w-px bg-gradient-to-b from-emerald-500/0 via-emerald-500/20 to-emerald-500/0" />
           </div>
 
-          {/* Lado B: Adversários */}
-          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-8 duration-700">
+          <div className="flex flex-col gap-4">
             <h3 className="text-center text-xs font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">Oponentes</h3>
-            <div className={cn("grid gap-4 h-full", matchMode === 'doubles' ? "grid-cols-1" : "grid-cols-1")}>
+            <div className="grid gap-4 h-full">
               <MatchPlayerCard 
                 player={opponent1} 
                 label={matchMode === 'doubles' ? "Adversário 1" : "Adversário"} 
@@ -150,11 +200,12 @@ const NewMatch = () => {
         <div className="fixed bottom-8 left-0 right-0 px-4 flex justify-center z-30">
           <Button 
             disabled={!canStart}
+            onClick={handleCreateMatch}
             className={cn(
               "h-16 px-16 text-2xl font-black italic uppercase rounded-2xl shadow-2xl transition-all",
               canStart 
-                ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/40 translate-y-0" 
-                : "bg-white/10 text-white/20 translate-y-4 opacity-50 cursor-not-allowed"
+                ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/40" 
+                : "bg-white/10 text-white/20 opacity-50 cursor-not-allowed"
             )}
           >
             Começar {matchMode === 'solo' ? 'Duelo' : 'Batalha'}
@@ -162,9 +213,8 @@ const NewMatch = () => {
         </div>
       </main>
 
-      {/* Modal de Seleção Dinâmica */}
       <Dialog open={isSelectOpen} onOpenChange={setIsSelectOpen}>
-        <DialogContent className="bg-slate-950 border-white/10 text-white max-w-md p-0 overflow-hidden shadow-2xl">
+        <DialogContent className="bg-slate-950 border-white/10 text-white max-w-md p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">
               Selecionar <span className="text-emerald-500">
@@ -201,18 +251,15 @@ const NewMatch = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <p className="font-bold uppercase italic tracking-tighter group-hover:text-emerald-400 transition-colors">{player.name}</p>
-                      <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">{player.points} Pontos • {player.wins} Vitórias</p>
+                      <p className="font-bold uppercase italic tracking-tighter">{player.name}</p>
+                      <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">{player.points} Pontos</p>
                     </div>
-                    <div className="text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <UserPlus size={20} />
-                    </div>
+                    <UserPlus size={20} className="text-emerald-500 opacity-0 group-hover:opacity-100" />
                   </div>
                 ))
               ) : (
                 <div className="py-12 text-center text-white/20">
-                  <Search size={40} className="mx-auto mb-2 opacity-50" />
-                  <p>Nenhum jogador disponível</p>
+                  <p>Nenhum jogador encontrado</p>
                 </div>
               )}
             </div>
