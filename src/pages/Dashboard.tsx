@@ -1,27 +1,35 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PoolBackground from '@/components/PoolBackground';
 import { useSession } from '@/components/SessionContextProvider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Users, History, PlusCircle, LogOut } from 'lucide-react';
+import { Trophy, Users, History, PlusCircle, LogOut, UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import PlayerForm from '@/components/PlayerForm';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
   const { session, logout } = useSession();
   const navigate = useNavigate();
+  const [playerInfo, setPlayerInfo] = useState({ name: 'Jogador', wins: '0', matches: '0' });
+
+  useEffect(() => {
+    const saved = localStorage.getItem('player_profile');
+    if (saved) {
+      const data = JSON.parse(saved);
+      setPlayerInfo({
+        name: data.name || 'Jogador',
+        wins: data.wins.toString(),
+        matches: data.matches.toString()
+      });
+    }
+  }, []);
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
-
-  const stats = [
-    { label: 'Vitórias', value: '12', icon: Trophy, color: 'text-yellow-500' },
-    { label: 'Partidas', value: '24', icon: History, color: 'text-blue-500' },
-    { label: 'Amigos', value: '8', icon: Users, color: 'text-emerald-500' },
-  ];
 
   return (
     <div className="relative min-h-screen p-4 md:p-8 text-white">
@@ -30,60 +38,69 @@ const Dashboard = () => {
       <header className="z-10 relative flex justify-between items-center mb-12 max-w-5xl mx-auto">
         <div>
           <h2 className="text-sm uppercase tracking-widest text-emerald-400 font-bold mb-1">Bem-vindo de volta</h2>
-          <h1 className="text-3xl font-black italic uppercase">{session?.user?.user_metadata?.full_name || 'Jogador'}</h1>
+          <h1 className="text-3xl font-black italic uppercase">{playerInfo.name}</h1>
         </div>
-        <Button 
-          variant="ghost" 
-          onClick={handleLogout}
-          className="text-white hover:bg-white/10 rounded-full h-12 w-12 p-0"
-        >
-          <LogOut size={24} />
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className="text-white hover:bg-white/10 rounded-full h-12 w-12 p-0"
+          >
+            <LogOut size={24} />
+          </Button>
+        </div>
       </header>
 
-      <main className="z-10 relative max-w-5xl mx-auto space-y-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {stats.map((stat, i) => (
-            <Card key={i} className="bg-white/5 backdrop-blur-lg border-white/10 text-white overflow-hidden group hover:border-emerald-500/50 transition-colors">
-              <CardContent className="p-6 flex items-center justify-between">
+      <main className="z-10 relative max-w-5xl mx-auto">
+        <Tabs defaultValue="stats" className="space-y-8">
+          <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl w-full max-w-md mx-auto grid grid-cols-2">
+            <TabsTrigger value="stats" className="rounded-lg data-[state=active]:bg-emerald-600 font-bold uppercase italic tracking-tighter">Resumo</TabsTrigger>
+            <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-emerald-600 font-bold uppercase italic tracking-tighter">Meu Perfil</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="stats" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl flex items-center justify-between">
                 <div>
-                  <p className="text-white/60 text-sm font-medium">{stat.label}</p>
-                  <p className="text-3xl font-black italic">{stat.value}</p>
+                  <p className="text-white/60 text-sm font-medium uppercase">Vitórias</p>
+                  <p className="text-4xl font-black italic text-yellow-500">{playerInfo.wins}</p>
                 </div>
-                <stat.icon className={`${stat.color} opacity-80 group-hover:scale-110 transition-transform`} size={32} />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Button className="h-24 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex items-center gap-4 text-xl font-bold shadow-lg shadow-emerald-900/40 group">
-            <PlusCircle size={32} className="group-hover:rotate-90 transition-transform" />
-            Nova Partida
-          </Button>
-          <Button variant="outline" className="h-24 bg-white/5 hover:bg-white/10 border-white/10 rounded-2xl flex items-center gap-4 text-xl font-bold">
-            <Trophy size={32} className="text-yellow-500" />
-            Ver Rankings
-          </Button>
-        </div>
-
-        {/* Recent Matches Placeholder */}
-        <Card className="bg-white/5 backdrop-blur-lg border-white/10 text-white">
-          <CardHeader>
-            <CardTitle className="text-xl font-black italic uppercase flex items-center gap-2">
-              <History size={20} className="text-emerald-400" />
-              Últimas Partidas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-12 text-white/40">
-              <p>Você ainda não registrou partidas hoje.</p>
-              <p className="text-sm">Que tal começar uma agora?</p>
+                <Trophy size={40} className="text-yellow-500/50" />
+              </div>
+              <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl flex items-center justify-between">
+                <div>
+                  <p className="text-white/60 text-sm font-medium uppercase">Total Partidas</p>
+                  <p className="text-4xl font-black italic text-blue-500">{playerInfo.matches}</p>
+                </div>
+                <History size={40} className="text-blue-500/50" />
+              </div>
+              <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl flex items-center justify-between">
+                <div>
+                  <p className="text-white/60 text-sm font-medium uppercase">Posição</p>
+                  <p className="text-4xl font-black italic text-emerald-500">#1</p>
+                </div>
+                <Users size={40} className="text-emerald-500/50" />
+              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Button className="h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase shadow-2xl shadow-emerald-900/40 group transition-all">
+                <PlusCircle size={32} className="group-hover:rotate-90 transition-transform" />
+                Nova Partida
+              </Button>
+              <Button variant="outline" className="h-28 bg-white/5 hover:bg-white/10 border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase">
+                <Trophy size={32} className="text-yellow-500" />
+                Ver Rankings
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="profile" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PlayerForm />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
