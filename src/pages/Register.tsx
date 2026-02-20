@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSession } from '@/components/SessionContextProvider';
 
-const Login = () => {
+const Register = () => {
   const { session } = useSession();
   const navigate = useNavigate();
 
@@ -23,12 +23,12 @@ const Login = () => {
       <PoolBackground />
       <div className="z-10 w-full max-w-md bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/20 shadow-2xl">
         <h2 className="text-3xl font-black italic text-white text-center mb-8 uppercase tracking-tighter">
-          Entrar no <span className="text-emerald-500">Clube</span>
+          Criar sua <span className="text-emerald-500">Conta</span>
         </h2>
         
         <Auth
           supabaseClient={supabase}
-          view="sign_in"
+          view="sign_up"
           appearance={{
             theme: ThemeSupa,
             variables: {
@@ -44,30 +44,23 @@ const Login = () => {
           }}
           localization={{
             variables: {
-              sign_in: {
+              sign_up: {
                 email_label: 'E-mail',
-                password_label: 'Senha',
-                button_label: 'Entrar',
-                loading_button_label: 'Entrando...',
-                social_provider_text: 'Entrar com {{provider}}',
-                link_text: 'Não tem uma conta? Cadastre-se',
-              },
-              forgotten_password: {
-                link_text: 'Esqueceu sua senha?',
-                email_label: 'E-mail',
-                password_label: 'Senha',
-                button_label: 'Recuperar senha',
-                loading_button_label: 'Enviando instruções...',
+                password_label: 'Crie uma senha',
+                button_label: 'Cadastrar',
+                loading_button_label: 'Cadastrando...',
+                social_provider_text: 'Cadastrar com {{provider}}',
+                link_text: 'Já tem uma conta? Entre aqui',
               }
             }
           }}
           theme="dark"
           providers={[]}
         />
-        
+
         <div className="mt-6 text-center">
-          <Link to="/register" className="text-emerald-400 hover:text-emerald-300 text-sm font-bold uppercase transition-colors">
-            Criar nova conta
+          <Link to="/login" className="text-emerald-400 hover:text-emerald-300 text-sm font-bold uppercase transition-colors">
+            Voltar para o Login
           </Link>
         </div>
       </div>
@@ -75,4 +68,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
