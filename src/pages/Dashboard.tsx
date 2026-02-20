@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import PoolBackground from '@/components/PoolBackground';
 import { useSession } from '@/components/SessionContextProvider';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, History, PlusCircle, LogOut, Loader2 } from 'lucide-react';
+import { Trophy, Users, History, PlusCircle, LogOut, Loader2, Swords } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PlayerForm from '@/components/PlayerForm';
 import RankingList from '@/components/RankingList';
+import RecentMatches from '@/components/RecentMatches';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
 import { Player } from '@/utils/mockPlayers';
@@ -18,12 +19,14 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const [recentMatches, setRecentMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("stats");
 
   const fetchStats = async () => {
     if (!session?.user) return;
 
+    // Buscar perfil do usuário
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('*')
@@ -32,6 +35,7 @@ const Dashboard = () => {
     
     setProfile(userProfile);
 
+    // Buscar ranking (todos os perfis)
     const { data: allProfiles } = await supabase
       .from('profiles')
       .select('*')
@@ -44,15 +48,32 @@ const Dashboard = () => {
       }));
       setPlayers(formattedPlayers);
     }
+
+    // Buscar partidas recentes onde o usuário participou
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`player1_a.eq.${session.user.id},player2_a.eq.${session.user.id},player1_b.eq.${session.user.id},player2_b.eq.${session.user.id}`)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (matches) {
+      setRecentMatches(matches);
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
     fetchStats();
     
+    // Inscrição em tempo real para mudanças no banco
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchStats();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
         fetchStats();
       })
       .subscribe();
@@ -138,7 +159,7 @@ const Dashboard = () => {
               <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl flex items-center justify-between">
                 <div>
                   <p className="text-white/60 text-sm font-medium uppercase">Posição Ranking</p>
-                  <p className="text-4xl font-black italic text-emerald-500">#{myRank || '-'}</p>
+                  <p className="text-4xl font-black italic text-emerald-500">{myRank > 0 ? `#${myRank}` : '-'}</p>
                 </div>
                 <Users size={40} className="text-emerald-500/50" />
               </div>
@@ -160,6 +181,14 @@ const Dashboard = () => {
                 <Trophy size={32} className="text-yellow-500" />
                 Ranking Global
               </Button>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-2">
+                <Swords className="text-emerald-500" size={24} />
+                Partidas Recentes
+              </h3>
+              <RecentMatches matches={recentMatches} />
             </div>
           </TabsContent>
 
