@@ -39,7 +39,6 @@ const NewMatch = () => {
     const loadData = async () => {
       if (!session?.user) return;
 
-      // Buscar perfil do usuário logado
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -48,7 +47,6 @@ const NewMatch = () => {
       
       setCurrentUser({ ...profile, isCurrentUser: true });
 
-      // Buscar todos os outros jogadores cadastrados
       const { data: allPlayers } = await supabase
         .from('profiles')
         .select('*')
@@ -98,8 +96,7 @@ const NewMatch = () => {
         player1_a: session.user.id,
         player2_a: partner?.id || null,
         player1_b: opponent1?.id || null,
-        player2_b: opponent2?.id || null,
-        status: 'pending'
+        player2_b: opponent2?.id || null
       });
 
     toast.dismiss();
