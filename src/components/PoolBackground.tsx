@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 
 const FRAME_COUNT = 80;
-const FRAME_RATE = 1000 / 12; // 12 FPS
+const FRAME_RATE = 1000 / 12;
 
 const PoolBackground = () => {
   const [currentFrame, setCurrentFrame] = useState(0);
@@ -20,14 +20,11 @@ const PoolBackground = () => {
 
   return (
     <div className="fixed inset-0 -z-10 w-full h-full overflow-hidden bg-black">
-      {/* Imagem da Animação */}
       <img
         src={framePath}
-        alt="Background Animation"
+        alt="Background"
         className="w-full h-full object-cover opacity-60 grayscale-[0.2]"
       />
-      
-      {/* Overlay para melhorar a leitura do texto */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-transparent to-slate-950/90" />
       <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]" />
     </div>
