@@ -4,24 +4,26 @@ import React, { useState, useEffect } from 'react';
 import PoolBackground from '@/components/PoolBackground';
 import { useSession } from '@/components/SessionContextProvider';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, History, PlusCircle, LogOut } from 'lucide-react';
+import { Trophy, Users, History, PlusCircle, LogOut, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PlayerForm from '@/components/PlayerForm';
 import RankingList from '@/components/RankingList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
 import { Player } from '@/utils/mockPlayers';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
   const { session, logout } = useSession();
   const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("stats");
 
   const fetchStats = async () => {
     if (!session?.user) return;
 
-    // Buscar perfil do usuário logado
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('*')
@@ -30,7 +32,6 @@ const Dashboard = () => {
     
     setProfile(userProfile);
 
-    // Buscar ranking global
     const { data: allProfiles } = await supabase
       .from('profiles')
       .select('*')
@@ -43,12 +44,12 @@ const Dashboard = () => {
       }));
       setPlayers(formattedPlayers);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchStats();
     
-    // Sincronização em tempo real
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
@@ -61,12 +62,31 @@ const Dashboard = () => {
     };
   }, [session]);
 
+  const handleNewMatch = () => {
+    if (!profile?.name) {
+      toast.error("Perfil incompleto!", {
+        description: "Você precisa definir seu nome ou apelido na aba 'Meus Dados' antes de jogar."
+      });
+      setActiveTab("profile");
+      return;
+    }
+    navigate('/new-match');
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
   const myRank = players.findIndex(p => p.isCurrentUser) + 1;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <Loader2 className="animate-spin text-emerald-500" size={48} />
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen p-4 md:p-8 text-white">
@@ -75,7 +95,12 @@ const Dashboard = () => {
       <header className="z-10 relative flex justify-between items-center mb-12 max-w-5xl mx-auto">
         <div>
           <h2 className="text-sm uppercase tracking-widest text-emerald-400 font-bold mb-1">Status do Atleta</h2>
-          <h1 className="text-3xl font-black italic uppercase">{profile?.name || session?.user?.email?.split('@')[0]}</h1>
+          <h1 className="text-3xl font-black italic uppercase">
+            {profile?.name || "Jogador Sem Nome"}
+          </h1>
+          {!profile?.name && (
+            <p className="text-red-400 text-[10px] font-bold uppercase animate-pulse">⚠️ Complete seu perfil para jogar</p>
+          )}
         </div>
         <Button 
           variant="ghost" 
@@ -87,7 +112,7 @@ const Dashboard = () => {
       </header>
 
       <main className="z-10 relative max-w-5xl mx-auto">
-        <Tabs defaultValue="stats" className="space-y-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl w-full max-w-2xl mx-auto grid grid-cols-3">
             <TabsTrigger value="stats" className="rounded-lg data-[state=active]:bg-emerald-600 font-bold uppercase italic tracking-tighter">Resumo</TabsTrigger>
             <TabsTrigger value="ranking" className="rounded-lg data-[state=active]:bg-emerald-600 font-bold uppercase italic tracking-tighter">Ranking</TabsTrigger>
@@ -121,7 +146,7 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Button 
-                onClick={() => navigate('/new-match')}
+                onClick={handleNewMatch}
                 className="h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase shadow-2xl shadow-emerald-900/40 group transition-all"
               >
                 <PlusCircle size={32} className="group-hover:rotate-90 transition-transform" />
@@ -129,11 +154,7 @@ const Dashboard = () => {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => {
-                  const tabsElement = document.querySelector('[role="tablist"]');
-                  const rankingTab = tabsElement?.querySelector('[value="ranking"]') as HTMLButtonElement;
-                  rankingTab?.click();
-                }}
+                onClick={() => setActiveTab("ranking")}
                 className="h-28 bg-white/5 hover:bg-white/10 border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase"
               >
                 <Trophy size={32} className="text-yellow-500" />
