@@ -8,6 +8,7 @@ import { SessionContextProvider } from "./components/SessionContextProvider";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import NewMatch from "./pages/NewMatch";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/new-match" element={<NewMatch />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

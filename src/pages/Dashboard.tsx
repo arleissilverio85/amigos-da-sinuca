@@ -85,13 +85,24 @@ const Dashboard = () => {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Button className="h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase shadow-2xl shadow-emerald-900/40 group transition-all">
+              <Button 
+                onClick={() => navigate('/new-match')}
+                className="h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase shadow-2xl shadow-emerald-900/40 group transition-all"
+              >
                 <PlusCircle size={32} className="group-hover:rotate-90 transition-transform" />
                 Nova Partida
               </Button>
-              <Button variant="outline" className="h-28 bg-white/5 hover:bg-white/10 border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  const tabsElement = document.querySelector('[role="tablist"]');
+                  const rankingTab = tabsElement?.querySelector('[value="ranking"]') as HTMLButtonElement;
+                  rankingTab?.click();
+                }}
+                className="h-28 bg-white/5 hover:bg-white/10 border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase"
+              >
                 <Trophy size={32} className="text-yellow-500" />
-                Histórico Geral
+                Ranking Global
               </Button>
             </div>
           </TabsContent>
