@@ -1,7 +1,7 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import PoolBackground from "@/components/PoolBackground";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Trophy, Users, Target } from "lucide-react";
+import { ChevronRight, Trophy, Users } from "lucide-react";
 
 const Index = () => {
   return (
@@ -19,10 +19,6 @@ const Index = () => {
           <h1 className="text-6xl md:text-9xl font-black tracking-tighter italic uppercase leading-none">
             Amigos da <span className="text-emerald-500 block md:inline underline decoration-8 underline-offset-[12px]">Sinuca</span>
           </h1>
-          
-          <p className="text-slate-300 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
-            A experiência clássica do bilhar com a nostalgia da arte pixelada em alta fidelidade.
-          </p>
         </header>
 
         <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -35,13 +31,8 @@ const Index = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12 w-full max-w-3xl">
           {[
-            { 
-              icon: <Target className="text-emerald-500 mb-3" size={24} />,
-              title: "Estética Retro", 
-              desc: "Paletas de cores clássicas de 16-bits e técnicas de dithering autênticas." 
-            },
             { 
               icon: <Users className="text-emerald-500 mb-3" size={24} />,
               title: "Comunidade", 
