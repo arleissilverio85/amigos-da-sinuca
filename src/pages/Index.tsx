@@ -14,7 +14,7 @@ const Index = () => {
     if (!session) {
       navigate('/login');
     } else {
-      console.log("Usuário logado:", session.user.email);
+      navigate('/dashboard');
     }
   };
 
