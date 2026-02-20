@@ -1,3 +1,5 @@
+"use client";
+
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import PoolBackground from "@/components/PoolBackground";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,6 @@ const Index = () => {
     if (!session) {
       navigate('/login');
     } else {
-      // Aqui iremos para a tela de perfil/dashboard futuramente
       console.log("Usuário logado:", session.user.email);
     }
   };
