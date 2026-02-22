@@ -63,6 +63,7 @@ const NewMatch = () => {
 
   const openSelector = (slot: SlotType) => {
     setActiveSlot(slot);
+    setSearchTerm(''); // Limpa a busca ao abrir
     setIsSelectOpen(true);
   };
 
@@ -74,6 +75,7 @@ const NewMatch = () => {
     setActiveSlot(null);
   };
 
+  // Filtra IDs já selecionados para não aparecerem na lista
   const selectedIds = [partner?.id, opponent1?.id, opponent2?.id].filter(Boolean);
   const filteredPlayers = dbPlayers
     .filter(p => !selectedIds.includes(p.id))
@@ -135,7 +137,14 @@ const NewMatch = () => {
 
         <Tabs 
           value={matchMode} 
-          onValueChange={(v) => setMatchMode(v as 'solo' | 'doubles')}
+          onValueChange={(v) => {
+            setMatchMode(v as 'solo' | 'doubles');
+            // Se mudar para solo, limpa os jogadores extras
+            if (v === 'solo') {
+              setPartner(null);
+              setOpponent2(null);
+            }
+          }}
           className="bg-white/5 p-1 rounded-2xl border border-white/10 w-full md:w-auto"
         >
           <TabsList className="bg-transparent w-full">
@@ -155,7 +164,10 @@ const NewMatch = () => {
           {/* Equipe A */}
           <div className="space-y-3">
             <h3 className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/60">Sua Equipe</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={cn(
+              "grid gap-4",
+              matchMode === 'doubles' ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+            )}>
               <MatchPlayerCard player={currentUser} label="Você" />
               {matchMode === 'doubles' && (
                 <MatchPlayerCard 
@@ -168,7 +180,7 @@ const NewMatch = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center py-2">
             <div className="w-14 h-14 rounded-full bg-emerald-600 flex items-center justify-center shadow-2xl border-4 border-slate-950 shrink-0">
               <Swords size={28} className="text-white" />
             </div>
@@ -179,7 +191,10 @@ const NewMatch = () => {
           {/* Equipe B */}
           <div className="space-y-3">
             <h3 className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-red-500/60">Oponentes</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={cn(
+              "grid gap-4",
+              matchMode === 'doubles' ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+            )}>
               <MatchPlayerCard 
                 player={opponent1} 
                 label={matchMode === 'doubles' ? "Adversário 1" : "Adversário"} 
@@ -214,7 +229,7 @@ const NewMatch = () => {
         </div>
       </main>
 
-      {/* Seletor de Jogador adaptado para Mobile */}
+      {/* Seletor de Jogador */}
       <Dialog open={isSelectOpen} onOpenChange={setIsSelectOpen}>
         <DialogContent className="bg-slate-950 border-white/10 text-white w-[95vw] max-w-md p-0 overflow-hidden rounded-3xl">
           <DialogHeader className="p-6 pb-2">
