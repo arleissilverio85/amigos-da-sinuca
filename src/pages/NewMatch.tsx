@@ -118,43 +118,44 @@ const NewMatch = () => {
   }
 
   return (
-    <div className="relative min-h-screen p-4 md:p-8 text-white overflow-x-hidden pb-24">
+    <div className="relative min-h-screen p-4 md:p-8 text-white overflow-x-hidden pb-32">
       <PoolBackground />
       
-      <header className="z-10 relative flex flex-col md:flex-row md:items-center justify-between mb-12 max-w-7xl mx-auto gap-6">
+      <header className="z-10 relative flex flex-col md:flex-row md:items-center justify-between mb-8 max-w-7xl mx-auto gap-4">
         <div className="flex items-center">
           <Button 
             variant="ghost" 
             onClick={() => navigate('/dashboard')}
-            className="text-white hover:bg-white/10 rounded-full mr-4"
+            className="text-white hover:bg-white/10 rounded-full mr-2 h-10 w-10 p-0"
           >
             <ArrowLeft size={24} />
           </Button>
-          <h1 className="text-3xl font-black italic uppercase tracking-tighter">Novo <span className="text-emerald-500">Duelo</span></h1>
+          <h1 className="text-2xl font-black italic uppercase tracking-tighter">Novo <span className="text-emerald-500">Duelo</span></h1>
         </div>
 
         <Tabs 
           value={matchMode} 
           onValueChange={(v) => setMatchMode(v as 'solo' | 'doubles')}
-          className="bg-white/5 p-1 rounded-2xl border border-white/10"
+          className="bg-white/5 p-1 rounded-2xl border border-white/10 w-full md:w-auto"
         >
-          <TabsList className="bg-transparent">
-            <TabsTrigger value="solo" className="rounded-xl data-[state=active]:bg-emerald-600 gap-2 font-bold uppercase italic">
-              <User size={16} /> 1 vs 1
+          <TabsList className="bg-transparent w-full">
+            <TabsTrigger value="solo" className="flex-1 rounded-xl data-[state=active]:bg-emerald-600 gap-2 font-bold uppercase italic text-xs">
+              <User size={14} /> 1 vs 1
             </TabsTrigger>
-            <TabsTrigger value="doubles" className="rounded-xl data-[state=active]:bg-emerald-600 gap-2 font-bold uppercase italic">
-              <Users size={16} /> 2 vs 2
+            <TabsTrigger value="doubles" className="flex-1 rounded-xl data-[state=active]:bg-emerald-600 gap-2 font-bold uppercase italic text-xs">
+              <Users size={14} /> 2 vs 2
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </header>
 
-      <main className="z-10 relative max-w-7xl mx-auto flex flex-col items-center">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 items-stretch w-full">
+      <main className="z-10 relative max-w-7xl mx-auto">
+        <div className="flex flex-col gap-6">
           
-          <div className="flex flex-col gap-4">
-            <h3 className="text-center text-xs font-black uppercase tracking-[0.2em] text-emerald-500/60 mb-2">Sua Equipe</h3>
-            <div className="grid gap-4 h-full">
+          {/* Equipe A */}
+          <div className="space-y-3">
+            <h3 className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/60">Sua Equipe</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <MatchPlayerCard player={currentUser} label="Você" />
               {matchMode === 'doubles' && (
                 <MatchPlayerCard 
@@ -167,15 +168,18 @@ const NewMatch = () => {
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-4 py-8 lg:py-0 self-center">
-            <div className="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-900/40 border-4 border-slate-950 z-20">
-              <Swords size={40} className="text-white" />
+          <div className="flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-600 flex items-center justify-center shadow-2xl border-4 border-slate-950 shrink-0">
+              <Swords size={28} className="text-white" />
             </div>
+            <div className="h-px bg-white/10 flex-1 ml-4" />
+            <div className="h-px bg-white/10 flex-1 mr-4" />
           </div>
 
-          <div className="flex flex-col gap-4">
-            <h3 className="text-center text-xs font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">Oponentes</h3>
-            <div className="grid gap-4 h-full">
+          {/* Equipe B */}
+          <div className="space-y-3">
+            <h3 className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-red-500/60">Oponentes</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <MatchPlayerCard 
                 player={opponent1} 
                 label={matchMode === 'doubles' ? "Adversário 1" : "Adversário"} 
@@ -194,12 +198,12 @@ const NewMatch = () => {
           </div>
         </div>
 
-        <div className="fixed bottom-8 left-0 right-0 px-4 flex justify-center z-30">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent z-30 flex justify-center pb-8">
           <Button 
             disabled={!canStart}
             onClick={handleCreateMatch}
             className={cn(
-              "h-16 px-16 text-2xl font-black italic uppercase rounded-2xl shadow-2xl transition-all",
+              "w-full max-w-sm h-16 text-xl font-black italic uppercase rounded-2xl shadow-2xl transition-all",
               canStart 
                 ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/40" 
                 : "bg-white/10 text-white/20 opacity-50 cursor-not-allowed"
@@ -210,8 +214,9 @@ const NewMatch = () => {
         </div>
       </main>
 
+      {/* Seletor de Jogador adaptado para Mobile */}
       <Dialog open={isSelectOpen} onOpenChange={setIsSelectOpen}>
-        <DialogContent className="bg-slate-950 border-white/10 text-white max-w-md p-0 overflow-hidden">
+        <DialogContent className="bg-slate-950 border-white/10 text-white w-[95vw] max-w-md p-0 overflow-hidden rounded-3xl">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">
               Selecionar <span className="text-emerald-500">
@@ -225,38 +230,38 @@ const NewMatch = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={18} />
               <Input 
                 placeholder="Procurar jogador..."
-                className="bg-white/5 border-white/10 pl-10 h-12 focus:border-emerald-500"
+                className="bg-white/5 border-white/10 pl-10 h-12 focus:border-emerald-500 rounded-xl"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
 
-          <ScrollArea className="h-[400px] px-6 pb-6">
+          <ScrollArea className="h-[60vh] px-6 pb-6">
             <div className="space-y-2">
               {filteredPlayers.length > 0 ? (
                 filteredPlayers.map(player => (
                   <div 
                     key={player.id}
                     onClick={() => handleSelectPlayer(player)}
-                    className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-emerald-600/20 hover:border-emerald-500/50 transition-all cursor-pointer group"
+                    className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-emerald-600/20 active:scale-95 transition-all cursor-pointer group"
                   >
                     <Avatar className="w-12 h-12 border border-white/10">
                       <AvatarImage src={player.photo || ''} />
-                      <AvatarFallback className="bg-white/10">
-                        <User size={20} />
+                      <AvatarFallback className="bg-white/10 font-black">
+                        {player.name?.[0].toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <p className="font-bold uppercase italic tracking-tighter">{player.name}</p>
                       <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">{player.points} Pontos</p>
                     </div>
-                    <UserPlus size={20} className="text-emerald-500 opacity-0 group-hover:opacity-100" />
+                    <UserPlus size={20} className="text-emerald-500" />
                   </div>
                 ))
               ) : (
                 <div className="py-12 text-center text-white/20">
-                  <p>Nenhum jogador encontrado</p>
+                  <p className="font-bold uppercase italic">Nenhum atleta encontrado</p>
                 </div>
               )}
             </div>
