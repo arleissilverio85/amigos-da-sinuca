@@ -49,15 +49,11 @@ const Login = () => {
                 password_label: 'Senha',
                 button_label: 'Entrar',
                 loading_button_label: 'Entrando...',
-                social_provider_text: 'Entrar com {{provider}}',
                 link_text: 'Não tem uma conta? Cadastre-se',
               },
               forgotten_password: {
                 link_text: 'Esqueceu sua senha?',
-                email_label: 'E-mail',
-                password_label: 'Senha',
                 button_label: 'Recuperar senha',
-                loading_button_label: 'Enviando instruções...',
               }
             }
           }}
@@ -65,10 +61,14 @@ const Login = () => {
           providers={[]}
         />
         
-        <div className="mt-6 text-center">
+        <div className="mt-8 pt-6 border-t border-white/5 flex flex-col items-center gap-4">
           <Link to="/register" className="text-emerald-400 hover:text-emerald-300 text-sm font-bold uppercase transition-colors">
             Criar nova conta
           </Link>
+          <div className="flex gap-4">
+            <Link to="/legal" className="text-[10px] text-white/40 hover:text-white uppercase font-bold tracking-widest">Termos de Uso</Link>
+            <Link to="/legal" className="text-[10px] text-white/40 hover:text-white uppercase font-bold tracking-widest">Privacidade</Link>
+          </div>
         </div>
       </div>
     </div>

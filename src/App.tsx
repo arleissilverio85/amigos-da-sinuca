@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import NewMatch from "./pages/NewMatch";
 import MatchResult from "./pages/MatchResult";
+import Legal from "./pages/Legal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/new-match" element={<NewMatch />} />
               <Route path="/match/:id" element={<MatchResult />} />
+              <Route path="/legal" element={<Legal />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
