@@ -14,7 +14,7 @@ const RankingList = ({ players }: RankingListProps) => {
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {players.map((player, index) => {
         const rank = index + 1;
         const isTop3 = rank <= 3;
@@ -27,73 +27,73 @@ const RankingList = ({ players }: RankingListProps) => {
             onPointerUp={() => setActivePlayerId(null)}
             onPointerLeave={() => setActivePlayerId(null)}
             className={cn(
-              "flex items-center gap-4 p-5 rounded-3xl border transition-all duration-300 cursor-pointer select-none",
+              "flex items-center gap-3 p-4 rounded-2xl border transition-all duration-300 cursor-pointer select-none overflow-hidden",
               player.isCurrentUser 
-                ? "bg-emerald-600/30 border-emerald-400 shadow-xl shadow-emerald-900/40" 
+                ? "bg-emerald-600/30 border-emerald-400 shadow-lg" 
                 : "bg-white/5 border-white/10 hover:bg-white/10",
-              isActive && "scale-[1.02] bg-white/20 border-emerald-500 ring-4 ring-emerald-500/20"
+              isActive && "scale-[1.01] bg-white/15 border-emerald-500 ring-2 ring-emerald-500/20"
             )}
           >
             {/* Posição no Ranking */}
-            <div className="flex items-center justify-center w-10 font-black italic text-2xl">
-              {rank === 1 && <Medal className="text-yellow-400" size={32} />}
-              {rank === 2 && <Medal className="text-slate-200" size={32} />}
-              {rank === 3 && <Medal className="text-amber-600" size={32} />}
-              {rank > 3 && <span className="text-white/40">#{rank}</span>}
+            <div className="flex items-center justify-center w-8 shrink-0 font-black italic text-xl">
+              {rank === 1 && <Medal className="text-yellow-400" size={28} />}
+              {rank === 2 && <Medal className="text-slate-300" size={28} />}
+              {rank === 3 && <Medal className="text-amber-600" size={28} />}
+              {rank > 3 && <span className="text-white/30 text-sm">#{rank}</span>}
             </div>
 
             {/* Foto do Jogador */}
             <Avatar className={cn(
-              "w-16 h-16 border-4 transition-transform duration-300",
+              "w-12 h-12 border-2 shrink-0 transition-transform duration-300",
               isTop3 ? "border-emerald-500" : "border-white/10",
               isActive && "scale-110"
             )}>
               <AvatarImage src={player.photo || ''} />
               <AvatarFallback className="bg-white/10">
-                <User size={32} />
+                <User size={24} />
               </AvatarFallback>
             </Avatar>
 
-            {/* Nome e Info de Partidas */}
-            <div className="flex-1 overflow-hidden">
-              <div className="flex items-center gap-2 mb-1">
+            {/* Nome e Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
                 <h3 className={cn(
-                  "font-black uppercase italic tracking-tighter truncate transition-all duration-300",
-                  isActive ? "text-2xl" : "text-lg"
+                  "font-black uppercase italic tracking-tighter truncate transition-all duration-300 leading-tight",
+                  isActive ? "text-xl text-emerald-400" : "text-base"
                 )}>
                   {player.name}
                 </h3>
-                {player.isCurrentUser && (
-                  <span className="bg-emerald-500 text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Você</span>
+                {player.isCurrentUser && !isActive && (
+                  <span className="bg-emerald-500 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase shrink-0">Você</span>
                 )}
               </div>
               
               <div className={cn(
-                "flex flex-wrap gap-x-3 gap-y-1 text-white/60 font-bold uppercase tracking-widest transition-all duration-300",
-                isActive ? "text-lg text-white" : "text-xs"
+                "flex flex-wrap items-center gap-x-2 text-white/50 font-bold uppercase tracking-widest transition-all duration-300",
+                isActive ? "text-sm text-white" : "text-[10px]"
               )}>
                 <span className="flex items-center gap-1">
-                  <span className="text-emerald-400">{player.wins}</span> Vitórias
+                  <span className="text-emerald-400">{player.wins}</span>V
                 </span>
-                <span className="text-white/20">•</span>
-                <span>{player.matches} Partidas</span>
+                <span className="opacity-20">|</span>
+                <span>{player.matches} Jogos</span>
               </div>
             </div>
 
             {/* Pontuação */}
-            <div className="text-right flex flex-col items-end">
+            <div className="text-right shrink-0">
               <div className={cn(
-                "flex items-center gap-2 text-emerald-400 font-black italic transition-all duration-300",
-                isActive ? "text-5xl" : "text-2xl"
+                "flex items-center justify-end gap-1 text-emerald-400 font-black italic transition-all duration-300",
+                isActive ? "text-3xl" : "text-lg"
               )}>
-                {!isActive && <Trophy size={20} className="text-yellow-500" />}
+                {!isActive && <Trophy size={14} className="text-yellow-500" />}
                 {player.points}
               </div>
               <p className={cn(
-                "text-white/40 uppercase font-bold tracking-tighter transition-all duration-300",
-                isActive ? "text-sm text-emerald-500 mt-1" : "text-[10px]"
+                "text-white/30 uppercase font-black tracking-tighter transition-all duration-300",
+                isActive ? "text-[10px] text-emerald-500" : "text-[8px]"
               )}>
-                Pontos Ganhos
+                Pontos
               </p>
             </div>
           </div>
