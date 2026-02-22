@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import NewMatch from "./pages/NewMatch";
+import MatchResult from "./pages/MatchResult";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/new-match" element={<NewMatch />} />
+              <Route path="/match/:id" element={<MatchResult />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

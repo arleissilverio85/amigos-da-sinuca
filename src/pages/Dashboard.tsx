@@ -49,13 +49,19 @@ const Dashboard = () => {
       setPlayers(formattedPlayers);
     }
 
-    // Buscar partidas recentes onde o usuário participou
+    // Buscar partidas recentes com detalhes dos jogadores
     const { data: matches } = await supabase
       .from('matches')
-      .select('*')
+      .select(`
+        *,
+        p1a:player1_a(name),
+        p2a:player2_a(name),
+        p1b:player1_b(name),
+        p2b:player2_b(name)
+      `)
       .or(`player1_a.eq.${session.user.id},player2_a.eq.${session.user.id},player1_b.eq.${session.user.id},player2_b.eq.${session.user.id}`)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(8);
 
     if (matches) {
       setRecentMatches(matches);
@@ -67,15 +73,10 @@ const Dashboard = () => {
   useEffect(() => {
     fetchStats();
     
-    // Inscrição em tempo real para mudanças no banco
     const channel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        fetchStats();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
-        fetchStats();
-      })
+      .channel('dashboard-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchStats())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => fetchStats())
       .subscribe();
 
     return () => {
@@ -86,7 +87,7 @@ const Dashboard = () => {
   const handleNewMatch = () => {
     if (!profile?.name) {
       toast.error("Perfil incompleto!", {
-        description: "Você precisa definir seu nome ou apelido na aba 'Meus Dados' antes de jogar."
+        description: "Defina seu nome na aba 'Meus Dados' antes de jogar."
       });
       setActiveTab("profile");
       return;
@@ -115,13 +116,10 @@ const Dashboard = () => {
       
       <header className="z-10 relative flex justify-between items-center mb-12 max-w-5xl mx-auto">
         <div>
-          <h2 className="text-sm uppercase tracking-widest text-emerald-400 font-bold mb-1">Status do Atleta</h2>
+          <h2 className="text-sm uppercase tracking-widest text-emerald-400 font-bold mb-1">Clube de Sinuca</h2>
           <h1 className="text-3xl font-black italic uppercase">
-            {profile?.name || "Jogador Sem Nome"}
+            {profile?.name || "Jogador"}
           </h1>
-          {!profile?.name && (
-            <p className="text-red-400 text-[10px] font-bold uppercase animate-pulse">⚠️ Complete seu perfil para jogar</p>
-          )}
         </div>
         <Button 
           variant="ghost" 
@@ -140,7 +138,7 @@ const Dashboard = () => {
             <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-emerald-600 font-bold uppercase italic tracking-tighter">Meus Dados</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="stats" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="stats" className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl flex items-center justify-between">
                 <div>
@@ -168,9 +166,9 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Button 
                 onClick={handleNewMatch}
-                className="h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase shadow-2xl shadow-emerald-900/40 group transition-all"
+                className="h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 text-2xl font-black italic uppercase shadow-2xl transition-all"
               >
-                <PlusCircle size={32} className="group-hover:rotate-90 transition-transform" />
+                <PlusCircle size={32} />
                 Nova Partida
               </Button>
               <Button 
@@ -192,11 +190,11 @@ const Dashboard = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="ranking" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="ranking">
             <RankingList players={players} />
           </TabsContent>
 
-          <TabsContent value="profile" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="profile">
             <PlayerForm />
           </TabsContent>
         </Tabs>
