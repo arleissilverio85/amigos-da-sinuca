@@ -6,10 +6,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, User, Trophy, Hash, DollarSign, Save, Loader2 } from 'lucide-react';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Camera, User, Save, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/components/SessionContextProvider';
+import { useNavigate } from 'react-router-dom';
 
 interface PlayerData {
   name: string;
@@ -22,8 +34,10 @@ interface PlayerData {
 }
 
 const PlayerForm = () => {
-  const { session } = useSession();
+  const { session, logout } = useSession();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [formData, setFormData] = useState<PlayerData>({
     name: '',
@@ -110,6 +124,45 @@ const PlayerForm = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!session?.user) return;
+
+    setDeleting(true);
+    const loadingToast = toast.loading("Apagando todos os seus dados...");
+
+    try {
+      const userId = session.user.id;
+
+      // 1. Apagar histórico de partidas onde o usuário participou
+      const { error: matchesError } = await supabase
+        .from('matches')
+        .delete()
+        .or(`creator_id.eq.${userId},player1_a.eq.${userId},player2_a.eq.${userId},player1_b.eq.${userId},player2_b.eq.${userId}`);
+
+      if (matchesError) throw matchesError;
+
+      // 2. Apagar o perfil
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+
+      // 3. Logout e redirecionamento (Nota: A exclusão da conta no Auth geralmente requer Edge Function, 
+      // mas apagar os dados do banco remove a identidade do usuário no app)
+      toast.dismiss(loadingToast);
+      toast.success("Conta excluída permanentemente.");
+      
+      await logout();
+      navigate('/');
+    } catch (error: any) {
+      toast.dismiss(loadingToast);
+      toast.error("Erro ao excluir dados: " + error.message);
+      setDeleting(false);
+    }
+  };
+
   if (fetching) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -119,69 +172,117 @@ const PlayerForm = () => {
   }
 
   return (
-    <Card className="bg-white/5 backdrop-blur-xl border-white/10 text-white overflow-hidden">
-      <CardHeader className="border-b border-white/5">
-        <CardTitle className="text-2xl font-black italic uppercase text-emerald-400">Dados do Jogador</CardTitle>
-        <CardDescription className="text-white/60">Mantenha seu perfil atualizado para o ranking.</CardDescription>
-      </CardHeader>
-      <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="relative group">
-              <Avatar className="w-32 h-32 border-4 border-emerald-500/30">
-                <AvatarImage src={formData.photo || ''} />
-                <AvatarFallback className="bg-white/10 text-3xl">
-                  <User size={48} className="text-white/20" />
-                </AvatarFallback>
-              </Avatar>
-              <label className="absolute bottom-0 right-0 p-2 bg-emerald-600 hover:bg-emerald-500 rounded-full cursor-pointer shadow-lg transition-colors">
-                <Camera size={20} />
-                <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-              </label>
-            </div>
-            
-            <div className="flex-1 w-full space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-emerald-400 font-bold uppercase text-xs">Nome ou Apelido</Label>
-                <Input 
-                  id="name"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Como te chamam na mesa?"
-                  className="bg-white/5 border-white/10 h-12 text-lg focus:border-emerald-500 transition-colors"
-                />
+    <div className="space-y-8">
+      <Card className="bg-white/5 backdrop-blur-xl border-white/10 text-white overflow-hidden">
+        <CardHeader className="border-b border-white/5">
+          <CardTitle className="text-2xl font-black italic uppercase text-emerald-400">Dados do Jogador</CardTitle>
+          <CardDescription className="text-white/60">Mantenha seu perfil atualizado para o ranking.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="relative group">
+                <Avatar className="w-32 h-32 border-4 border-emerald-500/30">
+                  <AvatarImage src={formData.photo || ''} />
+                  <AvatarFallback className="bg-white/10 text-3xl">
+                    <User size={48} className="text-white/20" />
+                  </AvatarFallback>
+                </Avatar>
+                <label className="absolute bottom-0 right-0 p-2 bg-emerald-600 hover:bg-emerald-500 rounded-full cursor-pointer shadow-lg transition-colors">
+                  <Camera size={20} />
+                  <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                </label>
+              </div>
+              
+              <div className="flex-1 w-full space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-emerald-400 font-bold uppercase text-xs">Nome ou Apelido</Label>
+                  <Input 
+                    id="name"
+                    name="name"
+                    required
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Como te chamam na mesa?"
+                    className="bg-white/5 border-white/10 h-12 text-lg focus:border-emerald-500 transition-colors"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
-            <div className="space-y-2">
-              <Label className="text-white/60 text-xs font-bold uppercase">Partidas</Label>
-              <Input type="number" name="matches" value={formData.matches} onChange={handleInputChange} className="bg-white/5 border-white/10" />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
+              <div className="space-y-2">
+                <Label className="text-white/60 text-xs font-bold uppercase">Partidas</Label>
+                <Input type="number" name="matches" value={formData.matches} onChange={handleInputChange} className="bg-white/5 border-white/10" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/60 text-xs font-bold uppercase">Vitórias</Label>
+                <Input type="number" name="wins" value={formData.wins} onChange={handleInputChange} className="bg-white/5 border-white/10" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/60 text-xs font-bold uppercase">Derrotas</Label>
+                <Input type="number" name="losses" value={formData.losses} onChange={handleInputChange} className="bg-white/5 border-white/10" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-white/60 text-xs font-bold uppercase">Vitórias</Label>
-              <Input type="number" name="wins" value={formData.wins} onChange={handleInputChange} className="bg-white/5 border-white/10" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-white/60 text-xs font-bold uppercase">Derrotas</Label>
-              <Input type="number" name="losses" value={formData.losses} onChange={handleInputChange} className="bg-white/5 border-white/10" />
-            </div>
-          </div>
 
-          <Button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 h-14 text-xl font-black italic uppercase shadow-xl shadow-emerald-900/40"
-          >
-            {loading ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" />} 
-            Salvar Perfil
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 h-14 text-xl font-black italic uppercase shadow-xl shadow-emerald-900/40"
+            >
+              {loading ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" />} 
+              Salvar Perfil
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-red-500/5 border-red-500/20 text-white overflow-hidden">
+        <CardHeader className="border-b border-red-500/10">
+          <CardTitle className="text-xl font-black italic uppercase text-red-500 flex items-center gap-2">
+            <AlertTriangle size={24} /> Zona de Perigo
+          </CardTitle>
+          <CardDescription className="text-red-500/60 font-medium">Ações irreversíveis para sua conta.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <h4 className="font-bold text-lg uppercase italic tracking-tighter">Excluir minha conta</h4>
+              <p className="text-sm text-white/40">Ao excluir sua conta, todos os seus pontos, vitórias e histórico de partidas serão apagados permanentemente de nossos servidores.</p>
+            </div>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  disabled={deleting}
+                  className="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 h-14 px-8 font-black uppercase italic tracking-widest shrink-0"
+                >
+                  <Trash2 className="mr-2" size={20} /> Excluir Tudo
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-slate-950 border-white/10 text-white rounded-3xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-2xl font-black italic uppercase text-red-500">Tem certeza absoluta?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-white/60 text-base">
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente seu perfil de atleta e removerá todo o seu histórico de duelos do banco de dados do clube.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="mt-6">
+                  <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl font-bold uppercase text-xs">Cancelar</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDeleteAccount}
+                    className="bg-red-600 hover:bg-red-500 text-white border-none rounded-xl font-black uppercase italic tracking-widest"
+                  >
+                    Sim, apagar tudo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
