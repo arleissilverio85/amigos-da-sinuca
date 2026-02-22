@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PoolBackground from '@/components/PoolBackground';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Swords, Trophy, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Swords, Trophy, Loader2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
@@ -46,12 +46,12 @@ const MatchResult = () => {
 
   const handleFinishMatch = async (winner: 'a' | 'b') => {
     if (match.status !== 'pending') {
-      toast.error("Esta partida já foi finalizada!");
+      toast.error("Esta partida já foi finalizada ou cancelada!");
       return;
     }
 
     setUpdating(true);
-    toast.loading("Registrando vitória...");
+    const loadingToast = toast.loading("Registrando vitória...");
 
     try {
       // 1. Atualizar a partida
@@ -84,12 +84,40 @@ const MatchResult = () => {
         }).eq('id', pid);
       }
 
-      toast.dismiss();
+      toast.dismiss(loadingToast);
       toast.success("Resultado registrado com sucesso!");
       navigate('/dashboard');
     } catch (err: any) {
-      toast.dismiss();
+      toast.dismiss(loadingToast);
       toast.error("Erro ao salvar: " + err.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleCancelMatch = async () => {
+    if (match.status !== 'pending') return;
+
+    const confirmCancel = window.confirm("Deseja realmente cancelar esta partida? Nenhuma pontuação será alterada.");
+    if (!confirmCancel) return;
+
+    setUpdating(true);
+    const loadingToast = toast.loading("Cancelando partida...");
+
+    try {
+      const { error } = await supabase
+        .from('matches')
+        .update({ status: 'cancelled' })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.dismiss(loadingToast);
+      toast.success("Partida cancelada com sucesso.");
+      navigate('/dashboard');
+    } catch (err: any) {
+      toast.dismiss(loadingToast);
+      toast.error("Erro ao cancelar: " + err.message);
     } finally {
       setUpdating(false);
     }
@@ -182,11 +210,32 @@ const MatchResult = () => {
           </div>
         </div>
 
+        {match.status === 'pending' && (
+          <div className="flex justify-center pt-8 border-t border-white/5">
+            <Button 
+              variant="ghost" 
+              onClick={handleCancelMatch}
+              disabled={updating}
+              className="text-white/40 hover:text-red-500 hover:bg-red-500/10 font-black uppercase italic tracking-widest gap-2"
+            >
+              <XCircle size={18} /> Cancelar Partida
+            </Button>
+          </div>
+        )}
+
         {match.status === 'finished' && (
           <div className="text-center py-12 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl">
             <CheckCircle2 size={64} className="text-emerald-500 mx-auto mb-4" />
             <h2 className="text-3xl font-black italic uppercase mb-2">Partida Finalizada</h2>
             <p className="text-white/40 font-bold uppercase tracking-widest text-sm">Os pontos já foram distribuídos aos atletas.</p>
+          </div>
+        )}
+
+        {match.status === 'cancelled' && (
+          <div className="text-center py-12 bg-red-500/5 border border-red-500/20 rounded-3xl backdrop-blur-xl">
+            <AlertTriangle size={64} className="text-red-500 mx-auto mb-4" />
+            <h2 className="text-3xl font-black italic uppercase mb-2 text-red-500">Partida Cancelada</h2>
+            <p className="text-white/40 font-bold uppercase tracking-widest text-sm">Nenhuma pontuação foi alterada para este duelo.</p>
           </div>
         )}
       </main>
