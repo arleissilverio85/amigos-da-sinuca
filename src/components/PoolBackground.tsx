@@ -1,41 +1,97 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 const FRAME_COUNT = 80;
-const FRAME_RATE = 1000 / 12; // 12 FPS para equilíbrio entre fluidez e performance mobile
+const FPS = 12;
 
 const PoolBackground = () => {
-  const [currentFrame, setCurrentFrame] = useState(0);
-  const frameRef = useRef(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const framesRef = useRef<HTMLImageElement[]>([]);
+  const requestRef = useRef<number>();
+  const lastTimeRef = useRef<number>(0);
+  const frameIndexRef = useRef<number>(0);
 
   useEffect(() => {
-    // Pré-carregamento básico das primeiras imagens para evitar flash branco
-    const preloadImages = () => {
-      for (let i = 0; i < 10; i++) {
-        const img = new Image();
-        img.src = `/frames/pool/frame_${i.toString().padStart(3, "0")}.jpg`;
-      }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Pré-carregar todas as imagens para o Canvas
+    const loadFrames = async () => {
+      const loadPromises = Array.from({ length: FRAME_COUNT }).map((_, i) => {
+        return new Promise<HTMLImageElement>((resolve) => {
+          const img = new Image();
+          img.src = `/frames/pool/frame_${i.toString().padStart(3, "0")}.jpg`;
+          img.onload = () => resolve(img);
+        });
+      });
+
+      framesRef.current = await Promise.all(loadPromises);
+      
+      // Ajustar tamanho do canvas
+      const resize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      window.addEventListener('resize', resize);
+      resize();
+
+      // Loop de animação otimizado com requestAnimationFrame
+      const animate = (time: number) => {
+        if (lastTimeRef.current === 0) lastTimeRef.current = time;
+        const deltaTime = time - lastTimeRef.current;
+
+        if (deltaTime > 1000 / FPS) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          const img = framesRef.current[frameIndexRef.current];
+          if (img) {
+            // Desenhar imagem com cover-fill manual
+            const canvasRatio = canvas.width / canvas.height;
+            const imgRatio = img.width / img.height;
+            let drawWidth, drawHeight, offsetX, offsetY;
+
+            if (canvasRatio > imgRatio) {
+              drawWidth = canvas.width;
+              drawHeight = canvas.width / imgRatio;
+              offsetX = 0;
+              offsetY = (canvas.height - drawHeight) / 2;
+            } else {
+              drawWidth = canvas.height * imgRatio;
+              drawHeight = canvas.height;
+              offsetX = (canvas.width - drawWidth) / 2;
+              offsetY = 0;
+            }
+
+            ctx.globalAlpha = 0.6; // Opacidade controlada no canvas
+            ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+          }
+
+          frameIndexRef.current = (frameIndexRef.current + 1) % FRAME_COUNT;
+          lastTimeRef.current = time;
+        }
+
+        requestRef.current = requestAnimationFrame(animate);
+      };
+
+      requestRef.current = requestAnimationFrame(animate);
     };
-    preloadImages();
 
-    const interval = setInterval(() => {
-      frameRef.current = (frameRef.current + 1) % FRAME_COUNT;
-      setCurrentFrame(frameRef.current);
-    }, FRAME_RATE);
+    loadFrames();
 
-    return () => clearInterval(interval);
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      window.removeEventListener('resize', () => {});
+    };
   }, []);
-
-  const framePath = `/frames/pool/frame_${currentFrame.toString().padStart(3, "0")}.jpg`;
 
   return (
     <div className="fixed inset-0 -z-10 w-full h-full overflow-hidden bg-black touch-none">
-      <img
-        src={framePath}
-        alt=""
-        className="w-full h-full object-cover opacity-60 grayscale-[0.2] transition-opacity duration-300"
-        loading="eager"
+      <canvas 
+        ref={canvasRef} 
+        className="w-full h-full grayscale-[0.2]"
       />
       {/* Camadas de gradiente para garantir leitura no mobile */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-transparent to-slate-950/95" />

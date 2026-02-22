@@ -25,7 +25,6 @@ const Dashboard = () => {
   const { data: players = [], isLoading: loadingRanking } = useRanking();
   const { data: recentMatches = [], isLoading: loadingMatches } = useRecentMatches(session?.user?.id);
 
-  // Inscrição em tempo real para invalidar o cache quando houver mudanças
   useEffect(() => {
     const channel = supabase
       .channel('dashboard-realtime')
@@ -79,7 +78,7 @@ const Dashboard = () => {
     <div className="relative min-h-screen p-4 md:p-8 text-white">
       <PoolBackground />
       
-      <header className="z-10 relative flex justify-between items-center mb-8 md:mb-12 max-w-5xl mx-auto">
+      <header className="z-10 relative flex justify-between items-center mb-8 md:mb-12 max-w-5xl mx-auto animate-in fade-in slide-in-from-top-4 duration-700">
         <div className="min-w-0 flex-1 mr-4">
           <h2 className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-black mb-0.5">Clube de Sinuca</h2>
           <h1 className="text-2xl md:text-3xl font-black italic uppercase truncate">
@@ -95,7 +94,7 @@ const Dashboard = () => {
         </Button>
       </header>
 
-      <main className="z-10 relative max-w-5xl mx-auto">
+      <main className="z-10 relative max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 md:space-y-8">
           <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl w-full max-w-2xl mx-auto grid grid-cols-3">
             <TabsTrigger value="stats" className="rounded-xl data-[state=active]:bg-emerald-600 font-bold uppercase italic text-[10px] md:text-xs tracking-tighter">Resumo</TabsTrigger>
@@ -105,21 +104,21 @@ const Dashboard = () => {
 
           <TabsContent value="stats" className="space-y-6 md:space-y-8">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-              <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-4 md:p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-4 md:p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-2 animate-in zoom-in-95 duration-500 delay-300 fill-mode-both">
                 <div>
                   <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase">Vitórias</p>
                   <p className="text-2xl md:text-4xl font-black italic text-yellow-500">{profile?.wins || 0}</p>
                 </div>
                 <Trophy size={24} className="text-yellow-500/30 md:w-10 md:h-10" />
               </div>
-              <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-4 md:p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-4 md:p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-2 animate-in zoom-in-95 duration-500 delay-400 fill-mode-both">
                 <div>
                   <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase">Partidas</p>
                   <p className="text-2xl md:text-4xl font-black italic text-blue-400">{profile?.matches || 0}</p>
                 </div>
                 <History size={24} className="text-blue-400/30 md:w-10 md:h-10" />
               </div>
-              <div className="col-span-2 md:col-span-1 bg-white/5 backdrop-blur-lg border border-white/10 p-4 md:p-6 rounded-2xl flex md:items-center justify-between gap-2">
+              <div className="col-span-2 md:col-span-1 bg-white/5 backdrop-blur-lg border border-white/10 p-4 md:p-6 rounded-2xl flex md:items-center justify-between gap-2 animate-in zoom-in-95 duration-500 delay-500 fill-mode-both">
                 <div>
                   <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase">Ranking</p>
                   <p className="text-2xl md:text-4xl font-black italic text-emerald-400">{myRank > 0 ? `#${myRank}` : '-'}</p>
@@ -128,7 +127,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-600 fill-mode-both">
               <Button 
                 onClick={handleNewMatch}
                 className="h-20 md:h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex items-center justify-center gap-3 text-xl md:text-2xl font-black italic uppercase shadow-xl transition-all active:scale-95"
@@ -146,7 +145,7 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-2 animate-in fade-in duration-1000 delay-700 fill-mode-both">
               <h3 className="text-lg font-black italic uppercase tracking-tighter flex items-center gap-2">
                 <Swords className="text-emerald-500" size={20} />
                 Partidas Recentes
