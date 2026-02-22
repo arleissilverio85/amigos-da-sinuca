@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 
 const FRAME_COUNT = 80;
-const FPS = 12;
+const FPS = 30; // Aumentado de 12 para 30 para maior velocidade e fluidez
 
 const PoolBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,12 +43,13 @@ const PoolBackground = () => {
         if (lastTimeRef.current === 0) lastTimeRef.current = time;
         const deltaTime = time - lastTimeRef.current;
 
-        if (deltaTime > 1000 / FPS) {
+        // Controle de FPS: executa o desenho apenas no intervalo desejado
+        if (deltaTime >= 1000 / FPS) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
           const img = framesRef.current[frameIndexRef.current];
           if (img) {
-            // Desenhar imagem com cover-fill manual
+            // Desenhar imagem com cover-fill manual para cobrir toda a tela
             const canvasRatio = canvas.width / canvas.height;
             const imgRatio = img.width / img.height;
             let drawWidth, drawHeight, offsetX, offsetY;
@@ -65,7 +66,7 @@ const PoolBackground = () => {
               offsetY = 0;
             }
 
-            ctx.globalAlpha = 0.6; // Opacidade controlada no canvas
+            ctx.globalAlpha = 0.6; // Opacidade controlada para leitura de conteúdo
             ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
           }
 
