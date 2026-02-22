@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/components/SessionContextProvider';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +37,7 @@ interface PlayerData {
 const PlayerForm = () => {
   const { session, logout } = useSession();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -113,26 +115,25 @@ const PlayerForm = () => {
         updated_at: new Date().toISOString(),
       });
 
-    setLoading(true);
-    setLoading(false);
-
     if (error) {
       toast.error("Erro ao salvar perfil: " + error.message);
     } else {
-      toast.success("Perfil atualizado com sucesso!", {
-        description: "Seus dados estão sincronizados com o clube."
-      });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['ranking'] });
+      toast.success("Perfil atualizado com sucesso!");
     }
+    setLoading(false);
   };
 
   const handleDeleteAccount = async () => {
     if (!session?.user) return;
     setDeleting(true);
-    const loadingToast = toast.loading("Excluindo sua conta e dados...");
+    const loadingToast = toast.loading("Limpando todos os seus registros do sistema...");
 
     try {
-      // 1. Deletar partidas onde o usuário participou
       const userId = session.user.id;
+
+      // 1. Deletar todas as partidas associadas ao usuário
       const { error: matchesError } = await supabase
         .from('matches')
         .delete()
@@ -140,7 +141,7 @@ const PlayerForm = () => {
 
       if (matchesError) throw matchesError;
 
-      // 2. Deletar o perfil
+      // 2. Deletar o perfil (isso remove o usuário do Ranking Global)
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -148,15 +149,18 @@ const PlayerForm = () => {
 
       if (profileError) throw profileError;
 
-      // 3. Realizar Logout (A conta de Autenticação será limpa do lado do servidor via RLS/Triggers ou ficará inativa sem dados)
-      toast.dismiss(loadingToast);
-      toast.success("Sua conta foi excluída com sucesso.");
+      // 3. Forçar invalidação do cache para o ranking atualizar para outros usuários
+      queryClient.invalidateQueries({ queryKey: ['ranking'] });
       
+      toast.dismiss(loadingToast);
+      toast.success("Todos os seus dados e registros de ranking foram apagados.");
+      
+      // 4. Logout e Redirecionamento
       await logout();
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err: any) {
       toast.dismiss(loadingToast);
-      toast.error("Erro ao excluir: " + err.message);
+      toast.error("Erro ao realizar limpeza: " + err.message);
       setDeleting(false);
     }
   };
