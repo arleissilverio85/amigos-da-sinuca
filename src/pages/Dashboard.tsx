@@ -10,76 +10,38 @@ import PlayerForm from '@/components/PlayerForm';
 import RankingList from '@/components/RankingList';
 import RecentMatches from '@/components/RecentMatches';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUserProfile, useRanking, useRecentMatches } from '@/hooks/use-queries';
 import { supabase } from '@/integrations/supabase/client';
-import { Player } from '@/utils/mockPlayers';
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from 'sonner';
 
 const Dashboard = () => {
   const { session, logout } = useSession();
   const navigate = useNavigate();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [profile, setProfile] = useState<any>(null);
-  const [recentMatches, setRecentMatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("stats");
 
-  const fetchStats = async () => {
-    if (!session?.user) return;
+  const { data: profile, isLoading: loadingProfile } = useUserProfile(session?.user?.id);
+  const { data: players = [], isLoading: loadingRanking } = useRanking();
+  const { data: recentMatches = [], isLoading: loadingMatches } = useRecentMatches(session?.user?.id);
 
-    const { data: userProfile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-    
-    setProfile(userProfile);
-
-    const { data: allProfiles } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('points', { ascending: false });
-
-    if (allProfiles) {
-      const formattedPlayers = allProfiles.map(p => ({
-        ...p,
-        isCurrentUser: p.id === session.user.id
-      }));
-      setPlayers(formattedPlayers);
-    }
-
-    const { data: matches } = await supabase
-      .from('matches')
-      .select(`
-        *,
-        p1a:player1_a(name),
-        p2a:player2_a(name),
-        p1b:player1_b(name),
-        p2b:player2_b(name)
-      `)
-      .or(`player1_a.eq.${session.user.id},player2_a.eq.${session.user.id},player1_b.eq.${session.user.id},player2_b.eq.${session.user.id}`)
-      .order('created_at', { ascending: false })
-      .limit(8);
-
-    if (matches) {
-      setRecentMatches(matches);
-    }
-
-    setLoading(false);
-  };
-
+  // Inscrição em tempo real para invalidar o cache quando houver mudanças
   useEffect(() => {
-    fetchStats();
-    
     const channel = supabase
-      .channel('dashboard-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => fetchStats())
+      .channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        queryClient.invalidateQueries({ queryKey: ['ranking'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['matches'] });
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session]);
+  }, [queryClient]);
 
   const handleNewMatch = () => {
     if (!profile?.name) {
@@ -97,9 +59,15 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const myRank = players.findIndex(p => p.isCurrentUser) + 1;
+  const formattedPlayers = players.map(p => ({
+    ...p,
+    isCurrentUser: p.id === session?.user?.id
+  }));
 
-  if (loading) {
+  const myRank = formattedPlayers.findIndex(p => p.isCurrentUser) + 1;
+  const isLoadingInitial = loadingProfile && players.length === 0;
+
+  if (isLoadingInitial) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <Loader2 className="animate-spin text-emerald-500" size={48} />
@@ -163,7 +131,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button 
                 onClick={handleNewMatch}
-                className="h-20 md:h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex items-center justify-center gap-3 text-xl md:text-2xl font-black italic uppercase shadow-xl transition-all"
+                className="h-20 md:h-28 bg-emerald-600 hover:bg-emerald-500 rounded-2xl flex items-center justify-center gap-3 text-xl md:text-2xl font-black italic uppercase shadow-xl transition-all active:scale-95"
               >
                 <PlusCircle className="w-6 h-6 md:w-8 md:h-8" />
                 Nova Partida
@@ -171,7 +139,7 @@ const Dashboard = () => {
               <Button 
                 variant="outline" 
                 onClick={() => setActiveTab("ranking")}
-                className="h-20 md:h-28 bg-white/5 hover:bg-white/10 border-white/10 rounded-2xl flex items-center justify-center gap-3 text-xl md:text-2xl font-black italic uppercase"
+                className="h-20 md:h-28 bg-white/5 hover:bg-white/10 border-white/10 rounded-2xl flex items-center justify-center gap-3 text-xl md:text-2xl font-black italic uppercase active:scale-95"
               >
                 <Trophy className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
                 Ranking Global
@@ -188,7 +156,7 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="ranking">
-            <RankingList players={players} />
+            <RankingList players={formattedPlayers} />
           </TabsContent>
 
           <TabsContent value="profile">
